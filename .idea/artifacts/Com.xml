@@ -1,0 +1,6 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="Com">
+    <output-path>$PROJECT_DIR$/../../../../UOC</output-path>
+    <root id="archive" name="Com.jar" />
+  </artifact>
+</component>
