@@ -1,5 +1,4 @@
 package storedb.providers;
-import com.qol.*;
 
 public class Provider {
     private String nif;

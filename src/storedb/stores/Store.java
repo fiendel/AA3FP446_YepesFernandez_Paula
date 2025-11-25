@@ -36,7 +36,7 @@ public class Store {
 
     public void getProduct(){
         for (Producto p : almacen){
-           io.println(p.toString());
+           io.println(p.getDescription());
         }
     }
 

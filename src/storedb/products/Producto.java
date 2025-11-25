@@ -2,7 +2,7 @@ package storedb.products;
 
 import storedb.providers.Provider;
 
-public class  Producto {
+public abstract class  Producto {
 
     private int id;
     private String description;
@@ -16,6 +16,10 @@ public class  Producto {
         setProvider(provider);
         setPrice(price);
         setStock(stock);
+    }
+
+    public Producto(){
+
     }
 
     public int getId() {

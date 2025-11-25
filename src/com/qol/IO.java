@@ -48,6 +48,11 @@ public class IO {
         return scanner.nextInt();
     }
 
+    public double readDouble(){
+        return scanner.nextDouble();
+    }
+
+
     public ArrayList<String> ParserNombre(String nombreRaw){
         String regex = "[\\s]";
         String[] parsed = nombreRaw.split(regex);
