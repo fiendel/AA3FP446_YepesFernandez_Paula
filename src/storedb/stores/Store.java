@@ -47,4 +47,12 @@ public class Store {
             }
         }
     }
+
+    public List<Producto> getAlmacen() {
+        return almacen;
+    }
+
+    public void setAlmacen(List<Producto> almacen) {
+        this.almacen = almacen;
+    }
 }

@@ -1,11 +1,11 @@
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-
 import storedb.products.*;
 import com.utils.*;
 import com.qol.*;
+import storedb.products.Types.Barniz;
+import storedb.products.Types.Subclasses.ColorBarniz;
 import storedb.products.Types.Subclasses.TipoTablero;
 import storedb.products.Types.Tablero;
 import storedb.providers.Provider;
@@ -17,6 +17,24 @@ public class Main {
         boolean salir = false;
         final IO io = new IO();
         List<Store> stores = new LinkedList<Store>();
+
+        interface Supplier<Provider> {
+            Provider get(); // Devuelve algo del tipo T
+        }
+
+        interface Table<Tablero> {
+            Tablero get(); // Devuelve algo del tipo T
+        }
+
+        interface Product<Producto> {
+            Producto get(); // Devuelve algo del tipo T
+        }
+
+        interface Varnish<Barniz>{
+            Barniz get();
+        }
+
+
         Runnable opcionSalir = () -> System.out.println("¡Adiós!");
 
         Runnable subMenuProductos = () -> {
@@ -40,15 +58,15 @@ public class Main {
 
         Runnable getStock = () ->{
 
-            io.println("Insert the id: ");
-            int id = io.readInt();
 
             for(Store store : stores){
-
-                if(store.getId() == id){
-                    io.println("" + store.getId());
+                io.println(store.getId() + store.getNombre()) ;
+                for(Producto p : store.getAlmacen()){
+                    io.println(p.getId() + p.getStock() + "") ;
                 }
+
             }
+
         };
 
 
@@ -58,21 +76,6 @@ public class Main {
             }
         };
 
-        interface Supplier<Provider> {
-            Provider get(); // Devuelve algo del tipo T
-        }
-
-        interface Table<Tablero> {
-            Tablero get(); // Devuelve algo del tipo T
-        }
-
-        interface Product<Producto> {
-            Producto get(); // Devuelve algo del tipo T
-        }
-
-        interface Varnish<Barniz>{
-
-        }
 
         Supplier addProvider = () ->{
             io.println("Set client NIF: ");
@@ -124,7 +127,7 @@ public class Main {
             );
         };
 
-        Table createTablero = () ->{
+        Varnish createBarnish = () ->{
             io.println("Set product id: ");
             int id = io.readInt();
             io.readln();
@@ -143,24 +146,21 @@ public class Main {
             io.println("Set product price: ");
             double price = io.readDouble();
             io.readln();
-            io.println("Set product height: ");
-            double height = io.readDouble();
-            io.readln();
-            io.println("Set product height: ");
-            double width = io.readDouble();
-            io.readln();
+            io.println("Set product volume ");
+            int mililitros = io.readInt();
 
 
-            return new Tablero(
+
+
+            return new Barniz(
                     id,                     // id
                     description,    // description
                     provider,                   // provider
                     stock,                         // stock
                     price,                      // price
-                    height,                        // height (metros)
-                    TipoTablero.MDF,            // tipoTablero
-                    width                      // width (metros)
-            );
+                    ColorBarniz.CAOBA,
+                    mililitros
+            ) {};
         };
 
 
@@ -172,8 +172,9 @@ public class Main {
             }));
 
             subOpciones.put(2, new ExtendedMenu.OpcionMenu("Add varnish", () ->{
-                producto[0] = (Producto)createTablero.get();
+                producto[0] = (Producto)createBarnish.get();
             }));
+
 
             ExtendedMenu.mostrarMenu("Add product", subOpciones);
             return producto[0];
@@ -211,7 +212,7 @@ public class Main {
             io.println("");
             io.println("Provider options: ");
             //subOpciones.put(3, new ExtendedMenu.OpcionMenu("Add provider", () -> addProvider.get()));
-            subOpciones.put(4, new ExtendedMenu.OpcionMenu("Get stock", getStock));
+            subOpciones.put(4, new ExtendedMenu.OpcionMenu("Get total stock", getStock));
             ExtendedMenu.mostrarMenu("Stores management", subOpciones);
         };
 

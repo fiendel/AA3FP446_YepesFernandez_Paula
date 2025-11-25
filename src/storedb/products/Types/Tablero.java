@@ -19,10 +19,6 @@ public class Tablero extends Producto {
         this.width = width;
     }
 
-    public Tablero(){
-
-    }
-
     public double getHeight() {
         return height;
     }
@@ -45,6 +41,61 @@ public class Tablero extends Producto {
 
     public void setWidth(double width) {
         this.width = width;
+    }
+
+    @Override
+    public String getDescription() {
+        return super.getDescription();
+    }
+
+    @Override
+    public int getId() {
+        return super.getId();
+    }
+
+    @Override
+    public Double getPrice() {
+        return super.getPrice();
+    }
+
+    @Override
+    public Provider getProvider() {
+        return super.getProvider();
+    }
+
+    @Override
+    public int getStock() {
+        return super.getStock();
+    }
+
+    @Override
+    public void setDescription(String description) {
+        super.setDescription(description);
+    }
+
+    @Override
+    public void setId(int id) {
+        super.setId(id);
+    }
+
+    @Override
+    public void setPrice(double price) {
+        super.setPrice(price);
+    }
+
+    @Override
+    public void setPrice(Double price) {
+        super.setPrice(price);
+    }
+
+    @Override
+    public void setProvider(Provider provider) {
+        super.setProvider(provider);
+    }
+
+    @Override
+    public void setStock(int stock) {
+        super.setStock(stock);
     }
 }
 
