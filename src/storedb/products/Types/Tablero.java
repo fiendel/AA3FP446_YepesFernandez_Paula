@@ -3,20 +3,24 @@ import storedb.products.Producto;
 import storedb.products.Types.Subclasses.TipoTablero;
 import storedb.providers.Provider;
 
+import javax.management.Descriptor;
+
 public class Tablero extends Producto {
     private double height;
     private  double width;
+    private String type;
     TipoTablero tipoTablero;
 
 
-    public Tablero(int id, String description, Provider provider,
+    public Tablero(int id, String description, String  provider,
                    int stock, double price, double height,
-                   TipoTablero tipoTablero, double width)
+                   TipoTablero tipoTablero, double width, String type)
     {
-        super(id, description, provider, stock, price);
+        super(description, id, price, provider, stock, type);
         this.height = height;
         this.tipoTablero = tipoTablero;
         this.width = width;
+        this.type = type;
     }
 
     public double getHeight() {
@@ -59,7 +63,7 @@ public class Tablero extends Producto {
     }
 
     @Override
-    public Provider getProvider() {
+    public String getProvider() {
         return super.getProvider();
     }
 
@@ -89,7 +93,7 @@ public class Tablero extends Producto {
     }
 
     @Override
-    public void setProvider(Provider provider) {
+    public void setProvider(String provider) {
         super.setProvider(provider);
     }
 

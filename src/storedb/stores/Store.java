@@ -9,6 +9,7 @@ public class Store {
 
     private  int id;
     private String nombre;
+    private Producto producto;
     private List<Producto> almacen = new LinkedList<Producto>();
     private IO io = new IO();
 
@@ -34,9 +35,11 @@ public class Store {
 
     }
 
+
+
     public void getProduct(){
         for (Producto p : almacen){
-           io.println(p.getDescription());
+           io.println("ID: " + p.getId() + " Type: " + p.getType() +" Description: " +  p.getDescription());
         }
     }
 

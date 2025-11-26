@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -10,30 +11,23 @@ import storedb.products.Types.Subclasses.TipoTablero;
 import storedb.products.Types.Tablero;
 import storedb.providers.Provider;
 import storedb.stores.Store;
+import storedb.DB;
 
 public class Main {
     public static void main(String[] args) {
 
         boolean salir = false;
         final IO io = new IO();
-        List<Store> stores = new LinkedList<Store>();
+        List<Store> stores = new LinkedList<>();
+        List<Producto> productos = new LinkedList<>();
+        List<Provider> providers = new LinkedList<>();
+        DB db = new DB();
 
-        interface Supplier<Provider> {
-            Provider get(); // Devuelve algo del tipo T
-        }
-
-        interface Table<Tablero> {
-            Tablero get(); // Devuelve algo del tipo T
-        }
-
-        interface Product<Producto> {
-            Producto get(); // Devuelve algo del tipo T
-        }
-
-        interface Varnish<Barniz>{
-            Barniz get();
-        }
-
+        // Interfaces (can be declared inside main)
+        interface Supplier<T> { T get(); }
+        interface Table<T> { T get(); }
+        interface Product<T> { T get(); }
+        interface Varnish<T> { T get(); }
 
         Runnable opcionSalir = () -> System.out.println("¡Adiós!");
 
@@ -46,7 +40,7 @@ public class Main {
             MenuAvanzado.mostrarMenu("Submenú Productos", subOpciones);
         };
 
-        Runnable addStore = () ->{
+        Runnable addStore = () -> {
             io.print("Insert store's id: ");
             int id = io.readInt();
             io.readln();
@@ -56,51 +50,38 @@ public class Main {
             io.println("ID: " + id + " Name: " + nombre);
         };
 
-        Runnable getStock = () ->{
-
-
-            for(Store store : stores){
-                io.println(store.getId() + store.getNombre()) ;
-                for(Producto p : store.getAlmacen()){
-                    io.println(p.getId() + p.getStock() + "") ;
+        Runnable getStock = () -> {
+            for (Store store : stores) {
+                io.println(store.getId() + " " + store.getNombre());
+                for (Producto p : store.getAlmacen()) {
+                    io.println(p.getId() + " " + p.getStock());
                 }
-
             }
-
         };
 
-
-        Runnable getStores = () ->{
-            for(Store store : stores){
+        Runnable getStores = () -> {
+            for (Store store : stores) {
                 io.println("ID: " + store.getId() + " Name: " + store.getNombre());
             }
         };
 
-
-        Supplier addProvider = () ->{
+        Supplier<Provider> addProvider = () -> {
             io.println("Set client NIF: ");
             String nif = io.readln();
             io.println("Set client name: ");
             String name = io.readln();
             Provider provider = new Provider(nif, name);
-            io.println(provider.getNif() + provider.getNombre());
+            io.println(provider.getNif() + " " + provider.getNombre());
             return provider;
-
         };
 
-        Table createTablero = () ->{
+        Table<Tablero> createTablero = () -> {
             io.println("Set product id: ");
             int id = io.readInt();
             io.readln();
             io.println("Set product description: ");
             String description = io.readln();
-            io.println("Set product provider: ");
-            io.println("Set provider NIF : ");
-            String providerId = io.readln();
-            io.readln();
-            io.println("Set provider name : ");
-            String providerName = io.readln();
-            Provider provider = new Provider(providerId,providerName);
+
             io.println("Set product stock: ");
             int stock = io.readInt();
             io.readln();
@@ -110,130 +91,95 @@ public class Main {
             io.println("Set product height: ");
             double height = io.readDouble();
             io.readln();
-            io.println("Set product height: ");
+            io.println("Set product width: ");
             double width = io.readDouble();
-            io.readln();
 
+            io.println("Select plank type:");
+            int j = 0;
+            for (TipoTablero c : TipoTablero.values()) {
+                io.println(j + ": " + c.toString());
+                j++;
+            }
+            io.print("Select an option: ");
+            int option = io.readInt();
+            TipoTablero tipoTablero = TipoTablero.values()[option];
 
-            return new Tablero(
-                    id,                     // id
-                    description,    // description
-                    provider,                   // provider
-                    stock,                         // stock
-                    price,                      // price
-                    height,                        // height (metros)
-                    TipoTablero.MDF,            // tipoTablero
-                    width                      // width (metros)
-            );
+            return new Tablero(id, description, "provider", stock, price, height, tipoTablero, width, "Tablero");
         };
 
-        Varnish createBarnish = () ->{
+        Varnish<Barniz> createVarnish = () -> {
             io.println("Set product id: ");
             int id = io.readInt();
             io.readln();
             io.println("Set product description: ");
             String description = io.readln();
-            io.println("Set product provider: ");
-            io.println("Set provider NIF : ");
-            String providerId = io.readln();
-            io.readln();
-            io.println("Set provider name : ");
-            String providerName = io.readln();
-            Provider provider = new Provider(providerId,providerName);
             io.println("Set product stock: ");
             int stock = io.readInt();
             io.readln();
             io.println("Set product price: ");
             double price = io.readDouble();
             io.readln();
-            io.println("Set product volume ");
+            io.println("Set product volume: ");
             int mililitros = io.readInt();
 
-
-
-
-            return new Barniz(
-                    id,                     // id
-                    description,    // description
-                    provider,                   // provider
-                    stock,                         // stock
-                    price,                      // price
-                    ColorBarniz.CAOBA,
-                    mililitros
-            ) {};
+            return new Barniz(id, description, "provider", stock, price, ColorBarniz.CAOBA, mililitros, "Barniz");
         };
 
-
-        Product addProduct = () ->{
-            final Producto[] producto = new Producto[1];
-            LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> subOpciones = new LinkedHashMap<>();
-            subOpciones.put(1, new ExtendedMenu.OpcionMenu("Add plank", () ->{
-                     producto[0] = (Producto)createTablero.get();
-            }));
-
-            subOpciones.put(2, new ExtendedMenu.OpcionMenu("Add varnish", () ->{
-                producto[0] = (Producto)createBarnish.get();
-            }));
-
-
-            ExtendedMenu.mostrarMenu("Add product", subOpciones);
-            return producto[0];
-
-
+        Runnable listAllProducts = () -> {
+            for (Producto producto : db.getProductos()) {
+                io.println(" " + producto.getType() + " " + producto.getId() + " ");
+            }
         };
 
+        Runnable searchProductByID = () -> {
+            io.print("Enter the ID: ");
+            int id = io.readInt();
+            for (Producto producto : db.getProductos()) {
+                if (producto.getId() == id) {
+                    io.println(" " + producto.getType() + " " + producto.getId() + " ");
+                }
+            }
+        };
 
-        Runnable  mngStore = () ->{
+        Runnable storeOpt = () -> {
             LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> subOpciones = new LinkedHashMap<>();
             io.println("Insert the id: ");
             int id = io.readInt();
             io.readln();
-            for(Store store : stores){
-                if(store.getId() == id){
+            for (Store store : stores) {
+                if (store.getId() == id) {
                     io.println("" + store.getId());
-                    subOpciones.put(1, new ExtendedMenu.OpcionMenu("Get name", () -> store.getNombre()));
-                    subOpciones.put(2, new ExtendedMenu.OpcionMenu("Add product",
-                                                                    () -> {store.addProduct((Producto)addProduct.get());
-                                                                            store.getProduct();
-                                                                    }));
-
+                    subOpciones.put(1, new ExtendedMenu.OpcionMenu("Get name", () -> io.println(store.getNombre())));
+                    subOpciones.put(2, new ExtendedMenu.OpcionMenu(
+                            "Add product to the store", () -> {
+                        int x = 0;
+                        for (Producto producto : db.getProductos()) {
+                            io.println(x + ": ID: " + producto.getId() + " Name: " + producto.getDescription());
+                            x++;
+                        }
+                        db.addProductToStoreEntry(12, 112323);
+                    }));
+                    ExtendedMenu.mostrarMenu("Store Manager", subOpciones);
                 }
-
             }
-            ExtendedMenu.mostrarMenu("Store Manager", subOpciones);
-
         };
 
-        Runnable storesMgr = () ->{
+        Runnable storesMgr = () -> {
             LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> subOpciones = new LinkedHashMap<>();
             subOpciones.put(1, new ExtendedMenu.OpcionMenu("Add store", addStore));
             subOpciones.put(2, new ExtendedMenu.OpcionMenu("List Stores", getStores));
-            subOpciones.put(3, new ExtendedMenu.OpcionMenu("Enter store manager", mngStore));
+            subOpciones.put(3, new ExtendedMenu.OpcionMenu("Enter store options", storeOpt));
             io.println("");
-            io.println("Provider options: ");
-            //subOpciones.put(3, new ExtendedMenu.OpcionMenu("Add provider", () -> addProvider.get()));
-            subOpciones.put(4, new ExtendedMenu.OpcionMenu("Get total stock", getStock));
             ExtendedMenu.mostrarMenu("Stores management", subOpciones);
         };
 
-        Runnable menuEnTest = () -> {
-
-            LinkedHashMap<Integer, MenuAvanzado.OpcionMenu> subOpciones = new LinkedHashMap<>();
-            //subOpciones.put(1, new MenuAvanzado.OpcionMenu("Listar  producto", () -> io.println("Jaarl")));
-            subOpciones.put(1, new MenuAvanzado.OpcionMenu("Stores manager", storesMgr));
-
-            MenuAvanzado.mostrarMenu("Menú Principal", subOpciones);
-
-        };
-
+        // Main menu loop
         while (!salir) {
-            LinkedHashMap<Integer, MenuAvanzado.OpcionMenu> menuPrincipal = new LinkedHashMap<>();
-            menuPrincipal.put(1, new MenuAvanzado.OpcionMenu("Gestión en test", menuEnTest));
-
-            //menuPrincipal.put(2, new MenuAvanzado.OpcionMenu("Consultar stock", menuEnTest));
-            //menuPrincipal.put(3, new MenuAvanzado.OpcionMenu("Salir", () -> salir = true));
-
-            MenuAvanzado.mostrarMenu("Menú Principal", menuPrincipal);
+            LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> subOpciones = new LinkedHashMap<>();
+            subOpciones.put(1, new ExtendedMenu.OpcionMenu("Stores manager", storesMgr));
+            subOpciones.put(2, new ExtendedMenu.OpcionMenu("Provider Manager", () -> {})); // placeholder
+            subOpciones.put(3, new ExtendedMenu.OpcionMenu("Products manager", () -> {})); // placeholder
+            ExtendedMenu.mostrarMenu("Menú Principal", subOpciones);
         }
     }
 }

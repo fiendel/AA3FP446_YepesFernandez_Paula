@@ -6,16 +6,18 @@ public abstract class  Producto {
 
     private int id;
     private String description;
-    private Provider provider;
+    private String provider;
     private double price;
     private int stock;
+    private String type = "Generic";
 
-    public Producto(int id, String description, Provider provider, int stock,  double price){
-        setId(id);
-        setDescription(description);
-        setProvider(provider);
-        setPrice(price);
-        setStock(stock);
+public Producto(String description, int id, double price, String provider, int stock, String type) {
+        this.description = description;
+        this.id = id;
+        this.price = price;
+        this.provider = provider;
+        this.stock = stock;
+        this.type = type;
     }
 
     public Producto(){
@@ -24,6 +26,14 @@ public abstract class  Producto {
 
     public int getId() {
         return id;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public void setId(int id) {
@@ -50,11 +60,11 @@ public abstract class  Producto {
         this.price = price;
     }
 
-    public Provider getProvider() {
+    public String getProvider() {
         return provider;
     }
 
-    public void setProvider(Provider provider) {
+    public void setProvider(String provider) {
         this.provider = provider;
     }
 

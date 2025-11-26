@@ -7,15 +7,14 @@ public class Barniz extends Producto {
 
     private int mililitros;
     private ColorBarniz colorBarniz;
+    private String type;
 
-    public Barniz(int id, String description, Provider provider, int stock, double price, ColorBarniz colorBarniz, int mililitros) {
-        super(id, description, provider, stock, price);
+    public Barniz(int id, String description, String provider, int stock, double price, ColorBarniz colorBarniz, int mililitros, String type) {
+        super(description, id, price, provider, stock, type);
+        this.type = type;
         this.colorBarniz = colorBarniz;
         this.mililitros = mililitros;
     }
-
-
-
 
     public ColorBarniz getColorBarniz() {
         return colorBarniz;
@@ -49,7 +48,7 @@ public class Barniz extends Producto {
     }
 
     @Override
-    public Provider getProvider() {
+    public String  getProvider() {
         return super.getProvider();
     }
 
@@ -62,9 +61,6 @@ public class Barniz extends Producto {
         super();
     }
 
-    public Barniz(int id, String description, Provider provider, int stock, double price) {
-        super(id, description, provider, stock, price);
-    }
 
     @Override
     public void setDescription(String description) {
@@ -87,8 +83,8 @@ public class Barniz extends Producto {
     }
 
     @Override
-    public void setProvider(Provider provider) {
-        super.setProvider(provider);
+    public void setType(String type) {
+        this.type = type;
     }
 
     @Override
