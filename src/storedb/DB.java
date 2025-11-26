@@ -108,4 +108,43 @@ public class DB {
         );
     }
 
+    
+    // Method to display a table of products, stores, and providers
+    public void displayProductTable() {
+        System.out.printf("%-5s %-20s %-20s %-20s%n", "ID", "Product", "Store", "Provider");
+        System.out.println("---------------------------------------------------------------------");
+
+        for (Producto producto : productos) {
+            int productId = producto.getId();
+            String productName = producto.getDescription();
+
+            // Get store name if exists
+            String storeName = "N/A";
+            if (productToStore.containsKey(productId)) {
+                int storeId = productToStore.get(productId);
+                for (Store store : stores) {
+                    if (store.getId() == storeId) {
+                        storeName = store.getNombre();
+                        break;
+                    }
+                }
+            }
+
+            // Get provider name if exists
+            String providerName = "N/A";
+            if (productToProvider.containsKey(productId)) {
+                String providerNIF = productToProvider.get(productId);
+                for (Provider provider : providers) {
+                    if (provider.getNif().equals(providerNIF)) {
+                        providerName = provider.getNombre();
+                        break;
+                    }
+                }
+            }
+
+            System.out.printf("%-5d %-20s %-20s %-20s%n", productId, productName, storeName, providerName);
+        }
+    }
+
+
 }
