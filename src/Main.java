@@ -1,4 +1,3 @@
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -19,21 +18,16 @@ public class Main {
         boolean salir = false;
         final IO io = new IO();
         List<Store> stores = new LinkedList<>();
-        List<Producto> productos = new LinkedList<>();
-        List<Provider> providers = new LinkedList<>();
+
         DB db = new DB();
 
-        interface Supplier<Provider> {
-            Provider get(); // Devuelve algo del tipo T
-        }
+
 
         interface Table<Tablero> {
-            Tablero get(); // Devuelve algo del tipo T
+            Tablero get();
         }
 
-        interface Product<Producto> {
-            Producto get(); // Devuelve algo del tipo T
-        }
+
 
         interface Varnish<Barniz> {
             Barniz get();
@@ -42,14 +36,7 @@ public class Main {
 
         Runnable opcionSalir = () -> System.out.println("¡Adiós!");
 
-        Runnable subMenuProductos = () -> {
-            LinkedHashMap<Integer, MenuAvanzado.OpcionMenu> subOpciones = new LinkedHashMap<>();
-            subOpciones.put(1, new MenuAvanzado.OpcionMenu("Añadir producto", () -> System.out.println("Producto añadido")));
-            subOpciones.put(2, new MenuAvanzado.OpcionMenu("Listar productos", () -> System.out.println("Mostrando productos")));
-            subOpciones.put(3, new MenuAvanzado.OpcionMenu("Volver al menú principal", () -> {}));
 
-            MenuAvanzado.mostrarMenu("Submenú Productos", subOpciones);
-        };
 
         Runnable addStore = () -> {
             io.print("Insert store's id: ");
@@ -76,15 +63,7 @@ public class Main {
             }
         };
 
-        Supplier addProvider = () -> {
-            io.println("Set client NIF: ");
-            String nif = io.readln();
-            io.println("Set client name: ");
-            String name = io.readln();
-            Provider provider = new Provider(nif, name);
-            io.println(provider.getNif() + provider.getNombre());
-            return provider;
-        };
+
 
         Table createTablero = () -> {
             io.println("Set product id: ");
@@ -143,7 +122,16 @@ public class Main {
             io.readln();
             io.println("Set product description: ");
             String description = io.readln();
-
+            io.println("Set product provider ---V\n ");
+            int i = 0;
+            for (Provider provider : db.getProviders()) {
+                io.println(i + ": NIF: " + provider.getNif() + "Name: " + provider.getNombre());
+                i++;
+            }
+            io.println("Select a provider: ");
+            int providerOption = io.readInt();
+            String providerNIF = db.getProviders().get(providerOption).getNif();
+            db.addProductToProviderEntry(id, providerNIF);
             io.println("Set product stock: ");
             int stock = io.readInt();
             io.readln();
@@ -152,14 +140,22 @@ public class Main {
             io.readln();
             io.println("Set product volume ");
             int mililitros = io.readInt();
-
+            ColorBarniz colorBarniz;
+            int j = 0;
+            for (ColorBarniz c :ColorBarniz.values()) {
+                io.println(j + ": " + c.toString());
+                j++;
+            }
+            io.print("Select an option :  ");
+            int option = io.readInt();
+            colorBarniz = ColorBarniz.values()[option];
             return new Barniz(
                     id,
                     description,
-                    "provider",
+                    providerNIF,
                     stock,
                     price,
-                    ColorBarniz.CAOBA,
+                    colorBarniz,
                     mililitros,
                     "Barniz"
             );
@@ -269,10 +265,38 @@ public class Main {
             ExtendedMenu.mostrarMenu("Providers management", subOpciones);
         };
 
+        Runnable modifyProduct = () -> {
+            int i = 0;
+            for (Producto producto : db.getProductos()) {
+                io.println(i + " NIF: " + producto.getId() + " Description: " + producto.getDescription());
+                i++;
+            }
+            io.print("Select the product to modify: ");
+            int selection = io.readInt();
+            Producto producto = db.getProductos().get(selection);
+            switch (producto.getType()) {
+                case "Tablero":
+                    Producto product = (Tablero) createTablero.get();
+                    db.modifyProduct(selection,product);
+                    break;
+
+                case "Barniz":
+                    Producto product1 = (Barniz) createVarnish.get();
+                    db.modifyProduct(selection,product1);
+                    break;
+
+                default:
+                    // fallback
+                    break;
+            }
+
+        };
+
         Runnable createProduct = () -> {
             LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> subOpciones = new LinkedHashMap<>();
-            subOpciones.put(1, new ExtendedMenu.OpcionMenu("Create plank", () -> db.addProcduct(((Producto) createTablero.get()))));
-            subOpciones.put(2, new ExtendedMenu.OpcionMenu("Create varnish", () -> db.addProcduct(((Producto) createVarnish.get()))));
+            io.println("--CAUTION-- the product type can not be changed after its creation");
+            subOpciones.put(1, new ExtendedMenu.OpcionMenu("Create plank", () -> db.addProcduct((Producto) createTablero.get())));
+            subOpciones.put(2, new ExtendedMenu.OpcionMenu("Create varnish", () -> db.addProcduct((Producto) createVarnish.get())));
             ExtendedMenu.mostrarMenu("Providers management", subOpciones);
         };
 
@@ -281,14 +305,16 @@ public class Main {
             subOpciones.put(1, new ExtendedMenu.OpcionMenu("Create product", createProduct));
             subOpciones.put(2, new ExtendedMenu.OpcionMenu("List all products", listAllProducts));
             subOpciones.put(3, new ExtendedMenu.OpcionMenu("Find by product id", searchProductByID));
+            subOpciones.put(4, new ExtendedMenu.OpcionMenu("Modify Product", modifyProduct));
+
             ExtendedMenu.mostrarMenu("Providers management", subOpciones);
         };
 
         while (!salir) {
             LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> subOpciones = new LinkedHashMap<>();
-            subOpciones.put(1, new ExtendedMenu.OpcionMenu("Stores manager", storesMgr));
-            subOpciones.put(2, new ExtendedMenu.OpcionMenu("Provider Manager", providerMgr));
-            subOpciones.put(3, new ExtendedMenu.OpcionMenu("Products manager", productMgr));
+            subOpciones.put(1, new ExtendedMenu.OpcionMenu("Store management", storesMgr));
+            subOpciones.put(2, new ExtendedMenu.OpcionMenu("Provider management", providerMgr));
+            subOpciones.put(3, new ExtendedMenu.OpcionMenu("Product management", productMgr));
             ExtendedMenu.mostrarMenu("Menú Principal", subOpciones);
         }
     }

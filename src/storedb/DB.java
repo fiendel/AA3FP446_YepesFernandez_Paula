@@ -92,8 +92,7 @@ public class DB {
                 storedNif.equals(oldNif) ? newNif : storedNif
         );
 
-        providers.get(providerIndex).setNombre(provider.getNombre());
-        providers.get(providerIndex).setNif(provider.getNif());
+
     }
 
 
@@ -108,42 +107,29 @@ public class DB {
         );
     }
 
-    
-    // Method to display a table of products, stores, and providers
-    public void displayProductTable() {
-        System.out.printf("%-5s %-20s %-20s %-20s%n", "ID", "Product", "Store", "Provider");
-        System.out.println("---------------------------------------------------------------------");
 
-        for (Producto producto : productos) {
-            int productId = producto.getId();
-            String productName = producto.getDescription();
+    public void modifyProduct(int productIndex, Producto producto){
+        // Old and new values
+        int oldID = productos.get(productIndex).getId();
+        int newID = producto.getId();
 
-            // Get store name if exists
-            String storeName = "N/A";
-            if (productToStore.containsKey(productId)) {
-                int storeId = productToStore.get(productId);
-                for (Store store : stores) {
-                    if (store.getId() == storeId) {
-                        storeName = store.getNombre();
-                        break;
-                    }
-                }
-            }
 
-            // Get provider name if exists
-            String providerName = "N/A";
-            if (productToProvider.containsKey(productId)) {
-                String providerNIF = productToProvider.get(productId);
-                for (Provider provider : providers) {
-                    if (provider.getNif().equals(providerNIF)) {
-                        providerName = provider.getNombre();
-                        break;
-                    }
-                }
-            }
+        // Update product in the list
+        productos.get(productIndex).setId(newID);
+        productos.get(productIndex).setDescription(producto.getDescription());
+        productos.get(productIndex).setStock(producto.getStock());
+        productos.get(productIndex).setPrice(producto.getPrice());
+        productos.get(productIndex).setStock(producto.getStock());
+        productos.get(productIndex).setProvider(producto.getProvider());
 
-            System.out.printf("%-5d %-20s %-20s %-20s%n", productId, productName, storeName, providerName);
-        }
+
+        // FIX: update all product → provider mappings
+        productToProvider.replaceAll((productId, storedNif) ->
+                String.valueOf(productId.equals(oldID) ? newID : productId)
+        );
+
+
+
     }
 
 

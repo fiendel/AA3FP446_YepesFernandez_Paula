@@ -1,69 +1,142 @@
 package com.qol;
 import java.util.ArrayList;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 
 public class IO {
-    private Scanner scanner = new Scanner(System.in);
 
-    public int println(String string){
+    private final Scanner scanner = new Scanner(System.in);
+
+
+
+    public boolean println(String string) {
         try {
-            System.out.println(string);
-            return 1;
-        }catch (Exception e){
-            return 0;
+            System.out.println(string != null ? string : "null");
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 
-    public boolean readBool(){
-        return scanner.nextBoolean();
-    }
-
-    public int print(String string){
+    public boolean print(String string) {
         try {
-            System.out.print(string);
-            return 1;
-        }catch (Exception e){
-            return 0;
+            System.out.print(string != null ? string : "null");
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 
-    public int read(){
+
+    public String readln() {
         try {
-            System.in.read();
-            return 1;
-        }catch (Exception e){
-            return 0;
+            String result = scanner.nextLine();
+            return result != null ? result : "";
+        } catch (Exception e) {
+            scannerReset();
+            return "";
         }
     }
 
-    public String readln (){
-        return scanner.nextLine();
+    public int readInt() {
+        while (true) {
+            try {
+                int value = scanner.nextInt();
+                scanner.nextLine(); // clean buffer
+                return value;
+            } catch (InputMismatchException e) {
+                println("Invalid number. Try again:");
+                scanner.nextLine(); // discard invalid token
+            } catch (Exception e) {
+                scannerReset();
+                return 0;
+            }
+        }
     }
 
-    public float readf (){
-        return scanner.nextFloat();
+    public float readFloat() {
+        while (true) {
+            try {
+                float value = scanner.nextFloat();
+                scanner.nextLine();
+                return value;
+            } catch (InputMismatchException e) {
+                println("Invalid number. Try again:");
+                scanner.nextLine();
+            } catch (Exception e) {
+                scannerReset();
+                return 0.0f;
+            }
+        }
     }
 
-    public int readInt(){
-        return scanner.nextInt();
+    public double readDouble() {
+        while (true) {
+            try {
+                double value = scanner.nextDouble();
+                scanner.nextLine();
+                return value;
+            } catch (InputMismatchException e) {
+                println("Invalid number. Try again:");
+                scanner.nextLine();
+            } catch (Exception e) {
+                scannerReset();
+                return 0.0;
+            }
+        }
     }
 
-    public double readDouble(){
-        return scanner.nextDouble();
+    public boolean readBool() {
+        while (true) {
+            try {
+                boolean value = scanner.nextBoolean();
+                scanner.nextLine();
+                return value;
+            } catch (InputMismatchException e) {
+                println("Invalid boolean. Use true/false. Try again:");
+                scanner.nextLine();
+            } catch (Exception e) {
+                scannerReset();
+                return false;
+            }
+        }
+    }
+
+    public int read() {
+        try {
+            return System.in.read();
+        } catch (Exception e) {
+            return -1;
+        }
     }
 
 
-    public ArrayList<String> ParserNombre(String nombreRaw){
-        String regex = "[\\s]";
-        String[] parsed = nombreRaw.split(regex);
+
+    public ArrayList<String> ParserNombre(String nombreRaw) {
         ArrayList<String> listaFinal = new ArrayList<>();
-        int index = 0;
-        for (String palabras : parsed){
-            listaFinal.add(parsed[index]);
-            index++;
 
+        if (nombreRaw == null || nombreRaw.trim().isEmpty())
+            return listaFinal;
+
+        try {
+            String[] parsed = nombreRaw.split("\\s+");
+            for (String palabra : parsed) {
+                if (palabra != null && !palabra.isEmpty()) {
+                    listaFinal.add(palabra);
+                }
+            }
+        } catch (Exception e) {
+            // return empty list on failure
         }
         return listaFinal;
+    }
 
+
+
+    /** Resets scanner if it becomes corrupted */
+    private void scannerReset() {
+        try {
+            scanner.nextLine();
+        } catch (Exception ignored) {}
     }
 }
