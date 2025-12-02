@@ -1,9 +1,10 @@
-package com.qol;
+package com.qol.storeDB;
+import com.qol.IO;
 import storedb.DB;
 import java.io.*;
 import java.util.ArrayList;
 
-public class IODB extends IO{
+public class IODB extends IO {
 
     public IODB() {
     }
