@@ -91,4 +91,17 @@ public class Barniz extends Producto {
     public void setStock(int stock) {
         super.setStock(stock);
     }
+
+    @Override
+    public String toString() {
+        return String.format("%s(id:%d, color:%s, volume:%dml, stock:%d, price:%.2f, provider:%s)",
+                getDescription(),
+                getId(),
+                colorBarniz,
+                mililitros,
+                getStock(),
+                getPrice(),
+                getProvider());
+    }
+
 }

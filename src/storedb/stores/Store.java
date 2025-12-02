@@ -58,4 +58,11 @@ public class Store {
     public void setAlmacen(List<Producto> almacen) {
         this.almacen = almacen;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("Store(id:%d, name:%s)%n", id, nombre));
+        return sb.toString();
+    }
 }

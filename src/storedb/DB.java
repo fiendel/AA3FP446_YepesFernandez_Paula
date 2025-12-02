@@ -99,8 +99,9 @@ public class DB {
     public void deleteProvider(int providerIndex) {
 
         // Old and new provider information
-        String oldNif = providers.get(providerIndex).getNif();
-
+        Provider provider = providers.get(providerIndex);
+        String oldNif = provider.getNif();
+        providers.remove(providerIndex);
         // DELETE all entries in productToProvider where storedNif == oldNif
         productToProvider.entrySet().removeIf(entry ->
                 entry.getValue().equals(oldNif)
@@ -112,8 +113,6 @@ public class DB {
         // Old and new values
         int oldID = productos.get(productIndex).getId();
         int newID = producto.getId();
-
-
         // Update product in the list
         productos.get(productIndex).setId(newID);
         productos.get(productIndex).setDescription(producto.getDescription());
@@ -127,10 +126,77 @@ public class DB {
         productToProvider.replaceAll((productId, storedNif) ->
                 String.valueOf(productId.equals(oldID) ? newID : productId)
         );
+    }
+    public void deleteProduct(int productIndex) {
 
-
-
+        // Old and new provider information
+        Producto producto =  productos.get(productIndex);
+        int oldID = producto.getId();
+        productos.remove(productIndex);
+        // DELETE all entries in productToProvider where storedNif == oldNif
+        productToProvider.entrySet().removeIf(entry ->
+                entry.getKey().equals(oldID)
+        );
     }
 
+    public LinkedList<Producto> getProductsByStore(int storeId) {
+        LinkedList<Producto> result = new LinkedList<>();
 
+        // Loop through all product → store mappings
+        for (var entry : productToStore.entrySet()) {
+            int productId = entry.getKey();
+            int mappedStoreId = entry.getValue();
+
+            if (mappedStoreId == storeId) {
+                // Find the product in productos list
+                for (Producto p : productos) {
+                    if (p.getId() == productId) {
+                        result.add(p);
+                        break;
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Database Snapshot\n\n");
+
+        sb.append("Stores:\n");
+        for (Store store : stores) {
+            sb.append(String.format("  - ID: %d, Name: %s\n", store.getId(), store.getNombre()));
+        }
+        if (stores.isEmpty()) sb.append("  (No stores)\n");
+
+        sb.append("\nProducts:\n");
+        for (Producto producto : productos) {
+            sb.append("  " + producto + "\n"); // Uses Producto.toString()
+        }
+        if (productos.isEmpty()) sb.append("  (No products)\n");
+
+        sb.append("\nProviders:\n");
+        for (Provider provider : providers) {
+            sb.append(String.format("  - NIF: %s, Name: %s\n", provider.getNif(), provider.getNombre()));
+        }
+        if (providers.isEmpty()) sb.append("  (No providers)\n");
+
+        sb.append("\nProduct → Store Mappings:\n");
+        for (var entry : productToStore.entrySet()) {
+            sb.append(String.format("  Product ID %d → Store ID %d\n", entry.getKey(), entry.getValue()));
+        }
+        if (productToStore.isEmpty()) sb.append("  (No product-store mappings)\n");
+
+        sb.append("\nProduct → Provider Mappings:\n");
+        for (var entry : productToProvider.entrySet()) {
+            sb.append(String.format("  Product ID %d → Provider NIF %s\n", entry.getKey(), entry.getValue()));
+        }
+        if (productToProvider.isEmpty()) sb.append("  (No product-provider mappings)\n");
+
+        sb.append("\nEnd of DB Snapshot\n");
+        return sb.toString();
+    }
 }

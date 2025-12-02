@@ -1,11 +1,15 @@
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import storedb.products.*;
 import com.utils.*;
 import com.qol.*;
+import storedb.products.Types.Articulo;
 import storedb.products.Types.Barniz;
 import storedb.products.Types.Subclasses.ColorBarniz;
+import storedb.products.Types.Subclasses.TipoArticulo;
 import storedb.products.Types.Subclasses.TipoTablero;
 import storedb.products.Types.Tablero;
 import storedb.providers.Provider;
@@ -13,309 +17,406 @@ import storedb.stores.Store;
 import storedb.DB;
 
 public class Main {
+
+    //region INPUT HELPERS
+    // ============================================================
+    // 0. SHARED PRODUCT INPUT HELPERS
+    // ============================================================
+
+    private record BaseProductData(int id, String description, String providerNIF, int stock, double price) {}
+
+    private static BaseProductData askBaseProductData(IO io, DB db) {
+        io.println("Enter product ID: ");
+        int id = io.readInt();
+
+        io.println("Enter product description: ");
+        String description = io.readln();
+
+        // Provider selection
+        io.println("Select the product provider:");
+        int i = 0;
+        for (Provider provider : db.getProviders()) {
+            io.println(i + ": " + provider);  // Use toString
+            i++;
+        }
+        io.print("Option: ");
+        int providerIndex = io.readInt();
+        String providerNIF = db.getProviders().get(providerIndex).getNif();
+        db.addProductToProviderEntry(id, providerNIF);
+
+        io.println("Enter product stock quantity: ");
+        int stock = io.readInt();
+        io.readln();
+
+        io.println("Enter product price: ");
+        double price = io.readDouble();
+        io.readln();
+
+        return new BaseProductData(id, description, providerNIF, stock, price);
+    }
+    //endregion
+
+    // ============================================================
     public static void main(String[] args) {
 
-        boolean salir = false;
         final IO io = new IO();
         List<Store> stores = new LinkedList<>();
-
         DB db = new DB();
 
-
-
+        //region RAW INTERFACES
         interface Table<Tablero> {
             Tablero get();
         }
-
-
 
         interface Varnish<Barniz> {
             Barniz get();
         }
 
+        interface Generic<Articulo> {
+            Articulo get();
+        }
+        //endregion
 
-        Runnable opcionSalir = () -> System.out.println("¡Adiós!");
-
-
+        //region STORE MANAGEMENT
+        // ============================================================
+        // 1. STORE MANAGEMENT
+        // ============================================================
 
         Runnable addStore = () -> {
-            io.print("Insert store's id: ");
+            io.print("Enter store ID: ");
             int id = io.readInt();
-            io.readln();
-            io.print("Insert the store name: ");
-            String nombre = io.readln();
-            stores.add(new Store(id, nombre));
-            io.println("ID: " + id + " Name: " + nombre);
+            io.print("Enter store name: ");
+            String name = io.readln();
+            stores.add(new Store(id, name));
+            io.println("Store added: ID = " + id + ", Name = " + name);
         };
 
-        Runnable getStock = () -> {
-            for (Store store : stores) {
-                io.println(store.getId() + store.getNombre());
-                for (Producto p : store.getAlmacen()) {
-                    io.println(p.getId() + p.getStock() + "");
+        Runnable listStores = () -> {
+            if (stores.isEmpty()) {
+                io.println("No stores available.");
+            } else {
+                io.println("Stores:");
+                for (Store store : stores) {
+                    io.println(store.toString());  // toString
                 }
             }
         };
 
-        Runnable getStores = () -> {
+        Runnable storeOptions = () -> {
+            io.println("Enter the store ID: ");
+            int id = io.readInt();
+
             for (Store store : stores) {
-                io.println("ID: " + store.getId() + " Name: " + store.getNombre());
+                if (store.getId() == id) {
+                    LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> options = new LinkedHashMap<>();
+                    options.put(1, new ExtendedMenu.OpcionMenu("Show store info",
+                            () -> io.println(store.toString()))); // toString
+
+                    options.put(2, new ExtendedMenu.OpcionMenu("Add product to this store", () -> {
+                        int index = 0;
+                        for (Producto producto : db.getProductos()) {
+                            io.println(index + ": " + producto); // toString
+                            index++;
+                        }
+                        io.print("Select product index: ");
+                        int productIndex = io.readInt();
+                        db.addProductToStoreEntry(db.getProductos().get(productIndex).getId(), id);
+                        io.println("Product added to store.");
+                    }));
+
+                    ExtendedMenu.mostrarMenu("Store Management", options);
+                }
             }
         };
 
+        Runnable storeManager = () -> {
+            LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> options = new LinkedHashMap<>();
+            options.put(1, new ExtendedMenu.OpcionMenu("Add a store", addStore));
+            options.put(2, new ExtendedMenu.OpcionMenu("List all stores", listStores));
+            options.put(3, new ExtendedMenu.OpcionMenu("Manage a store", storeOptions));
+            ExtendedMenu.mostrarMenu("Store Management Menu", options);
+        };
 
+        //endregion
 
-        Table createTablero = () -> {
-            io.println("Set product id: ");
-            int id = io.readInt();
-            io.readln();
-            io.println("Set product description: ");
-            String description = io.readln();
-            io.println("Set product provider ---V\n ");
-            int i = 0;
-            for (Provider provider : db.getProviders()) {
-                io.println(i + ": NIF: " + provider.getNif() + "Name: " + provider.getNombre());
-                i++;
-            }
-            io.println("Select a provider: ");
-            int providerOption = io.readInt();
-            String providerNIF = db.getProviders().get(providerOption).getNif();
-            db.addProductToProviderEntry(id, providerNIF);
-            io.println("Set product stock: ");
-            int stock = io.readInt();
-            io.readln();
-            io.println("Set product price: ");
-            double price = io.readDouble();
-            io.readln();
-            io.println("Set product height: ");
+        //region PRODUCT CREATION
+        // ============================================================
+        // 2. PRODUCT CREATION
+        // ============================================================
+
+        Table<Tablero> createTablero = () -> {
+            BaseProductData data = askBaseProductData(io, db);
+
+            io.println("Enter product height: ");
             double height = io.readDouble();
             io.readln();
-            io.println("Set product width: ");
+
+            io.println("Enter product width: ");
             double width = io.readDouble();
-            io.println("Set plank type: ");
-            TipoTablero tipoTablero;
+
+            io.println("Select plank type:");
             int j = 0;
-            for (TipoTablero c : TipoTablero.values()) {
-                io.println(j + ": " + c.toString());
+            for (TipoTablero type : TipoTablero.values()) {
+                io.println(j + ": " + type);
                 j++;
             }
-            io.print("Select an option :  ");
-            int option = io.readInt();
-            tipoTablero = TipoTablero.values()[option];
+            io.print("Option: ");
+            TipoTablero type = TipoTablero.values()[io.readInt()];
 
             return new Tablero(
-                    id,
-                    description,
-                    providerNIF,
-                    stock,
-                    price,
+                    data.id(),
+                    data.description(),
+                    data.providerNIF(),
+                    data.stock(),
+                    data.price(),
                     height,
-                    tipoTablero,
+                    type,
                     width,
                     "Tablero"
             );
         };
 
-        Varnish createVarnish = () -> {
-            io.println("Set product id: ");
-            int id = io.readInt();
-            io.readln();
-            io.println("Set product description: ");
-            String description = io.readln();
-            io.println("Set product provider ---V\n ");
-            int i = 0;
-            for (Provider provider : db.getProviders()) {
-                io.println(i + ": NIF: " + provider.getNif() + "Name: " + provider.getNombre());
-                i++;
-            }
-            io.println("Select a provider: ");
-            int providerOption = io.readInt();
-            String providerNIF = db.getProviders().get(providerOption).getNif();
-            db.addProductToProviderEntry(id, providerNIF);
-            io.println("Set product stock: ");
-            int stock = io.readInt();
-            io.readln();
-            io.println("Set product price: ");
-            double price = io.readDouble();
-            io.readln();
-            io.println("Set product volume ");
-            int mililitros = io.readInt();
-            ColorBarniz colorBarniz;
+        Varnish<Barniz> createVarnish = () -> {
+            BaseProductData data = askBaseProductData(io, db);
+
+            io.println("Enter product volume (ml): ");
+            int ml = io.readInt();
+
+            io.println("Select varnish color:");
             int j = 0;
-            for (ColorBarniz c :ColorBarniz.values()) {
-                io.println(j + ": " + c.toString());
+            for (ColorBarniz color : ColorBarniz.values()) {
+                io.println(j + ": " + color);
                 j++;
             }
-            io.print("Select an option :  ");
-            int option = io.readInt();
-            colorBarniz = ColorBarniz.values()[option];
+            io.print("Option: ");
+            ColorBarniz selectedColor = ColorBarniz.values()[io.readInt()];
+
             return new Barniz(
-                    id,
-                    description,
-                    providerNIF,
-                    stock,
-                    price,
-                    colorBarniz,
-                    mililitros,
+                    data.id(),
+                    data.description(),
+                    data.providerNIF(),
+                    data.stock(),
+                    data.price(),
+                    selectedColor,
+                    ml,
                     "Barniz"
             );
         };
 
+        Generic<Articulo> createGeneric = () -> {
+            BaseProductData data = askBaseProductData(io, db);
+
+            io.println("Select article type:");
+            int j = 0;
+            for (TipoArticulo type : TipoArticulo.values()) {
+                io.println(j + ": " + type);
+                j++;
+            }
+            io.print("Option: ");
+            TipoArticulo selectedType = TipoArticulo.values()[io.readInt()];
+
+            return new Articulo(
+                    data.description(),
+                    data.id(),
+                    data.price(),
+                    data.providerNIF(),
+                    data.stock(),
+                    "Generic",
+                    selectedType
+            );
+        };
+
+        //endregion
+
+        //region Product MANAGEMENT
+        // ============================================================
+        // 3. PRODUCT MANAGEMENT
+        // ============================================================
+
         Runnable listAllProducts = () -> {
-            for (Producto producto : db.getProductos()) {
-                io.println(" " + producto.getType() + producto.getId() + " ");
-            }
-        };
-
-        Runnable searchProductByID = () -> {
-            io.print("Enter the ID: ");
-            int id = io.readInt();
-            for (Producto producto : db.getProductos()) {
-                if (producto.getId() == id) {
-                    io.println(" " + producto.getType() + producto.getId() + " ");
+            if (db.getProductos().isEmpty()) {
+                io.println("No products available.");
+            } else {
+                io.println("Products:");
+                for (Producto p : db.getProductos()) {
+                    io.println(p.toString());  // toString
                 }
             }
         };
 
-        Runnable storeOpt = () -> {
-            LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> subOpciones = new LinkedHashMap<>();
-            io.println("Insert the id: ");
-            int id = io.readInt();
-            io.readln();
-            for (Store store : stores) {
-                if (store.getId() == id) {
-                    io.println("" + store.getId());
-                    subOpciones.put(1, new ExtendedMenu.OpcionMenu("Get name", () -> io.println(store.getNombre())));
-                    subOpciones.put(2, new ExtendedMenu.OpcionMenu(
-                            "Add product to the store", () -> {
-                        int x = 0;
-                        for (Producto producto : db.getProductos()) {
-                            io.println(x + ": Product id: " + producto.getId() + " Type: " + producto.getType()
-                                    + " Type: " + producto.getDescription() + " ProviderNIF: " + producto.getProvider());
-                            x++;
-                        }
-                        int product = io.readInt();
-                        db.addProductToStoreEntry(db.getProductos().get(product).getId(), id);
-                    }
-                    ));
-                    ExtendedMenu.mostrarMenu("Store Manager", subOpciones);
-                }
+        Runnable searchByProvider = () -> {
+            if (db.getProviders().isEmpty()) {
+                io.println("No providers available.");
+                return;
             }
-        };
 
-        Runnable storesMgr = () -> {
-            LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> subOpciones = new LinkedHashMap<>();
-            subOpciones.put(1, new ExtendedMenu.OpcionMenu("Add store", addStore));
-            subOpciones.put(2, new ExtendedMenu.OpcionMenu("List Stores", getStores));
-            subOpciones.put(3, new ExtendedMenu.OpcionMenu("Enter store options", storeOpt));
-            io.println("");
-            ExtendedMenu.mostrarMenu("Stores management", subOpciones);
-        };
-
-        Runnable modifyProvider = () -> {
+            io.println("Select provider:");
             int i = 0;
-            for (Provider provider : db.getProviders()) {
-                io.println(i + ": NIF: " + provider.getNif() + "Name: " + provider.getNombre());
+            for (Provider p : db.getProviders()) {
+                io.println(i + ": " + p); // toString
                 i++;
             }
-            io.print("Select the provider to modify: ");
-            int selection = io.readInt();
-            io.println("Set product provider: ");
-            io.println("Set provider NIF: ");
-            String providerId = io.readln();
-            io.readln();
-            io.println("Set provider name : ");
-            String providerName = io.readln();
-            Provider modifiedProvider = new Provider(providerId, providerName);
-            db.modifyProvider(selection, modifiedProvider);
+            io.print("Option: ");
+            String providerNIF = db.getProviders().get(io.readInt()).getNif();
+
+            io.println("Products from selected provider:");
+            for (Producto p : db.getProductos()) {
+                if (p.getProvider().equals(providerNIF)) {
+                    io.println(p.toString());  // toString
+                }
+            }
         };
 
-        Runnable deleteProvider = () -> {
+        Runnable searchByStore = () -> {
+            if (db.getStores().isEmpty()) {
+                io.println("No stores available.");
+                return;
+            }
+
+            io.println("Select store:");
             int i = 0;
-            for (Provider provider : db.getProviders()) {
-                io.println(i + ": NIF: " + provider.getNif() + "Name: " + provider.getNombre());
+            for (Store store : db.getStores()) {
+                io.println(i + ": " + store);  // toString
                 i++;
             }
-            io.print("Select the provider to modify: ");
-            int selection = io.readInt();
-            db.deleteProvider(selection);
-        };
-
-        Runnable createProvider = () -> {
-            io.println("Set provider: ");
-            io.println("Set provider NIF: ");
-            String providerId = io.readln();
-            io.readln();
-            io.println("Set provider name : ");
-            String providerName = io.readln();
-            Provider provider = new Provider(providerId, providerName);
-            db.addProvider(provider);
-        };
-
-        Runnable providerMgr = () -> {
-            LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> subOpciones = new LinkedHashMap<>();
-            subOpciones.put(1, new ExtendedMenu.OpcionMenu("Create Provider", createProvider));
-            subOpciones.put(2, new ExtendedMenu.OpcionMenu("List all providers", () -> {
-                for (Provider provider : db.getProviders()) {
-                    io.println(provider.getNombre());
-                }
-            }));
-            subOpciones.put(3, new ExtendedMenu.OpcionMenu("Modify provider", modifyProvider));
-            subOpciones.put(4, new ExtendedMenu.OpcionMenu("Delete provider", deleteProvider));
-            ExtendedMenu.mostrarMenu("Providers management", subOpciones);
+            io.print("Option: ");
+            LinkedList<Producto> productsByStore = db.getProductsByStore(db.getStores().get(io.readInt()).getId());
+            io.println("Products in selected store:");
+            for (Producto p : productsByStore) {
+                io.println(p.toString());  // toString
+            }
         };
 
         Runnable modifyProduct = () -> {
+            io.println("Select product to modify:");
             int i = 0;
-            for (Producto producto : db.getProductos()) {
-                io.println(i + " NIF: " + producto.getId() + " Description: " + producto.getDescription());
+            for (Producto p : db.getProductos()) {
+                io.println(i + ": " + p); // toString
                 i++;
             }
-            io.print("Select the product to modify: ");
+            io.print("Option: ");
             int selection = io.readInt();
             Producto producto = db.getProductos().get(selection);
+
             switch (producto.getType()) {
-                case "Tablero":
-                    Producto product = (Tablero) createTablero.get();
-                    db.modifyProduct(selection,product);
-                    break;
-
-                case "Barniz":
-                    Producto product1 = (Barniz) createVarnish.get();
-                    db.modifyProduct(selection,product1);
-                    break;
-
-                default:
-                    // fallback
-                    break;
+                case "Tablero" -> db.modifyProduct(selection, createTablero.get());
+                case "Barniz" -> db.modifyProduct(selection, createVarnish.get());
+                case "Generic" -> db.modifyProduct(selection, createGeneric.get());
             }
 
+            io.println("Product modified successfully.");
         };
 
         Runnable createProduct = () -> {
-            LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> subOpciones = new LinkedHashMap<>();
-            io.println("--CAUTION-- the product type can not be changed after its creation");
-            subOpciones.put(1, new ExtendedMenu.OpcionMenu("Create plank", () -> db.addProcduct((Producto) createTablero.get())));
-            subOpciones.put(2, new ExtendedMenu.OpcionMenu("Create varnish", () -> db.addProcduct((Producto) createVarnish.get())));
-            ExtendedMenu.mostrarMenu("Providers management", subOpciones);
+            LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> options = new LinkedHashMap<>();
+            io.println("--CAUTION-- Product type cannot be changed later.");
+            options.put(1, new ExtendedMenu.OpcionMenu("Create plank", () -> db.addProcduct(createTablero.get())));
+            options.put(2, new ExtendedMenu.OpcionMenu("Create varnish", () -> db.addProcduct(createVarnish.get())));
+            options.put(3, new ExtendedMenu.OpcionMenu("Create generic", () -> db.addProcduct(createGeneric.get())));
+            ExtendedMenu.mostrarMenu("Product Creation Menu", options);
         };
 
-        Runnable productMgr = () -> {
-            LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> subOpciones = new LinkedHashMap<>();
-            subOpciones.put(1, new ExtendedMenu.OpcionMenu("Create product", createProduct));
-            subOpciones.put(2, new ExtendedMenu.OpcionMenu("List all products", listAllProducts));
-            subOpciones.put(3, new ExtendedMenu.OpcionMenu("Find by product id", searchProductByID));
-            subOpciones.put(4, new ExtendedMenu.OpcionMenu("Modify Product", modifyProduct));
-
-            ExtendedMenu.mostrarMenu("Providers management", subOpciones);
+        Runnable deleteProduct = () -> {
+            io.println("Select product to delete:");
+            int i = 0;
+            for (Producto p : db.getProductos()) {
+                io.println(i + ": " + p);  // toString
+                i++;
+            }
+            io.print("Option: ");
+            int selection = io.readInt();
+            db.deleteProduct(selection);
+            io.println("Product deleted successfully.");
         };
 
-        while (!salir) {
-            LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> subOpciones = new LinkedHashMap<>();
-            subOpciones.put(1, new ExtendedMenu.OpcionMenu("Store management", storesMgr));
-            subOpciones.put(2, new ExtendedMenu.OpcionMenu("Provider management", providerMgr));
-            subOpciones.put(3, new ExtendedMenu.OpcionMenu("Product management", productMgr));
-            ExtendedMenu.mostrarMenu("Menú Principal", subOpciones);
+        Runnable productManager = () -> {
+            LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> options = new LinkedHashMap<>();
+            options.put(1, new ExtendedMenu.OpcionMenu("Create product", createProduct));
+            options.put(2, new ExtendedMenu.OpcionMenu("List all products", listAllProducts));
+            options.put(3, new ExtendedMenu.OpcionMenu("Search products by provider", searchByProvider));
+            options.put(4, new ExtendedMenu.OpcionMenu("Search products by store", searchByStore));
+            options.put(5, new ExtendedMenu.OpcionMenu("Modify a product", modifyProduct));
+            options.put(6, new ExtendedMenu.OpcionMenu("Delete a product", deleteProduct));
+            ExtendedMenu.mostrarMenu("Product Management Menu", options);
+        };
+
+        //endregion
+
+        //region PROVIDER MANAGER
+        // ============================================================
+        // 4. PROVIDER MANAGEMENT
+        // ============================================================
+
+        Runnable createProvider = () -> {
+            io.println("Enter provider NIF: ");
+            String nif = io.readln();
+            io.println("Enter provider name: ");
+            String name = io.readln();
+            db.addProvider(new Provider(nif, name));
+            io.println("Provider created successfully.");
+        };
+
+        Runnable modifyProvider = () -> {
+            io.println("Select provider to modify:");
+            int i = 0;
+            for (Provider p : db.getProviders()) {
+                io.println(i + ": " + p); // toString
+                i++;
+            }
+            io.print("Option: ");
+            int selection = io.readInt();
+            io.println("Enter new provider NIF: ");
+            String nif = io.readln();
+            io.println("Enter new provider name: ");
+            String name = io.readln();
+            db.modifyProvider(selection, new Provider(nif, name));
+            io.println("Provider modified successfully.");
+        };
+
+        Runnable deleteProvider = () -> {
+            io.println("Select provider to delete:");
+            int i = 0;
+            for (Provider p : db.getProviders()) {
+                io.println(i + ": " + p);  // toString
+                i++;
+            }
+            io.print("Option: ");
+            int selection = io.readInt();
+            db.deleteProvider(selection);
+            io.println("Provider deleted successfully.");
+        };
+
+        Runnable providerManager = () -> {
+            LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> options = new LinkedHashMap<>();
+            options.put(1, new ExtendedMenu.OpcionMenu("Create provider", createProvider));
+            options.put(2, new ExtendedMenu.OpcionMenu("List all providers", () -> {
+                io.println("Providers:");
+                for (Provider p : db.getProviders()) {
+                    io.println(p.toString());  // toString
+                }
+            }));
+            options.put(3, new ExtendedMenu.OpcionMenu("Modify provider", modifyProvider));
+            options.put(4, new ExtendedMenu.OpcionMenu("Delete provider", deleteProvider));
+            ExtendedMenu.mostrarMenu("Provider Management Menu", options);
+        };
+
+        //endregion
+
+        // ============================================================
+        // 5. MAIN MENU
+        // ============================================================
+
+        AtomicBoolean exitApp = new AtomicBoolean(false);
+        while (!exitApp.get()) {
+            LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> mainOptions = new LinkedHashMap<>();
+            mainOptions.put(1, new ExtendedMenu.OpcionMenu("Store management", storeManager));
+            mainOptions.put(2, new ExtendedMenu.OpcionMenu("Provider management", providerManager));
+            mainOptions.put(3, new ExtendedMenu.OpcionMenu("Product management", productManager));
+            mainOptions.put(4, new ExtendedMenu.OpcionMenu("Exit application", () -> {
+                System.out.println("Exiting application. Goodbye!");
+                exitApp.set(true);
+            }));
+            ExtendedMenu.mostrarMenu("Main Menu", mainOptions, false);
         }
     }
 }

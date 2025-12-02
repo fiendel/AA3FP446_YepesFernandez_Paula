@@ -101,6 +101,18 @@ public class Tablero extends Producto {
     public void setStock(int stock) {
         super.setStock(stock);
     }
+
+    @Override
+    public String toString() {
+        return String.format("%s(id:%d, type:%s, size:%.2fx%.2f, stock:%d, provider:%s)",
+                getDescription(),
+                getId(),
+                tipoTablero,
+                width,
+                height,
+                getStock(),
+                getProvider());
+    }
 }
 
 

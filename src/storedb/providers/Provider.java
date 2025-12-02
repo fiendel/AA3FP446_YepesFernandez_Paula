@@ -24,4 +24,10 @@ public class Provider {
     public void setNif(String nif) {
         this.nif = nif;
     }
+
+    @Override
+    public String toString() {
+        return String.format("Provider(NIF: %s, Name: %s)", nif, nombre);
+    }
+
 }

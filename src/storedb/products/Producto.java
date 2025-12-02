@@ -75,6 +75,12 @@ public Producto(String description, int id, double price, String provider, int s
     public void setStock(int stock) {
         this.stock = stock;
     }
-
+    @Override
+    public String toString() {
+        return String.format(
+                "[%s] %s \nID: %d | Provider: %s | Price: $%.2f | Stock: %d",
+                type, description, id, provider, price, stock
+        );
+    }
 
 }
