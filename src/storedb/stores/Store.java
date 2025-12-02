@@ -4,8 +4,9 @@ import storedb.products.*;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.io.Serializable;
 
-public class Store {
+public class Store implements Serializable{
 
     private  int id;
     private String nombre;

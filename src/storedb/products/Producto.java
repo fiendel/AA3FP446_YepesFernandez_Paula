@@ -1,15 +1,15 @@
 package storedb.products;
+import java.io.Serializable;
 
-import storedb.providers.Provider;
 
-public abstract class  Producto {
+public abstract class  Producto implements Serializable {
 
     private int id;
     private String description;
     private String provider;
     private double price;
     private int stock;
-    private String type = "Generic";
+    private String type = "abstract";
 
 public Producto(String description, int id, double price, String provider, int stock, String type) {
         this.description = description;

@@ -78,9 +78,6 @@ public class ExtendedMenu {
                 System.out.println(entry.getKey() + ". " + entry.getValue().getDescripcion());
             }
 
-            // Automatic 0 = exit
-            System.out.println("0. Go back");
-            System.out.print("Select an option: ");
 
             int seleccion;
             try {
@@ -90,10 +87,6 @@ public class ExtendedMenu {
                 continue;
             }
 
-            if (seleccion == 0) {
-                loopActive = false;
-                continue;
-            }
 
             OpcionMenu opcion = opciones.get(seleccion);
 

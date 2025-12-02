@@ -7,11 +7,13 @@ import storedb.stores.Store;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.io.Serializable;
 
-public class DB {
+public class DB implements Serializable {
     List<Store> stores = new LinkedList<>();
     List<Producto> productos = new LinkedList<>();
     List<Provider> providers = new LinkedList<>();
+    private static final long serialVersionUID = 1L;
 
     LinkedHashMap<Integer, Integer> productToStore = new LinkedHashMap<>();
     LinkedHashMap<Integer,String> productToProvider = new LinkedHashMap<>();

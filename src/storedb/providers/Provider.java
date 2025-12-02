@@ -1,6 +1,7 @@
 package storedb.providers;
+import java.io.Serializable;
 
-public class Provider {
+public class Provider implements Serializable {
     private String nif;
     private String nombre;
 
