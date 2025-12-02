@@ -4,7 +4,7 @@ import storedb.DB;
 import java.io.*;
 import java.util.ArrayList;
 
-public class IODB extends IO {
+public class IODB extends IO implements Serializable {
 
     public IODB() {
     }

@@ -1,12 +1,11 @@
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.qol.storeDB.IODB;
+import com.utils.graphics.Title;
 import storedb.products.*;
 import com.utils.*;
-import com.qol.*;
 import storedb.products.Types.Articulo;
 import storedb.products.Types.Barniz;
 import storedb.products.Types.Subclasses.ColorBarniz;
@@ -17,65 +16,20 @@ import storedb.providers.Provider;
 import storedb.stores.Store;
 import storedb.DB;
 
+import static storedb.products.BaseProductData.askBaseProductData;
+
 public class Main {
 
-    //region INPUT HELPERS
-    // ============================================================
-    // 0. SHARED PRODUCT INPUT HELPERS
-    // ============================================================
 
-    private record BaseProductData(int id, String description, String providerNIF, int stock, double price) {
-    }
-
-    private static BaseProductData askBaseProductData(IO io, DB db) {
-        io.println("Enter product ID: ");
-        int id = io.readInt();
-
-        io.println("Enter product description: ");
-        String description = io.readln();
-
-        // Provider selection
-        io.println("Select the product provider:");
-        int i = 0;
-        for (Provider provider : db.getProviders()) {
-            io.println(i + ": " + provider);  // Use toString
-            i++;
-        }
-        io.print("Option: ");
-        int providerIndex = io.readInt();
-        String providerNIF = db.getProviders().get(providerIndex).getNif();
-        db.addProductToProviderEntry(id, providerNIF);
-
-        io.println("Enter product stock quantity: ");
-        int stock = io.readInt();
-        io.readln();
-
-        io.println("Enter product price: ");
-        double price = io.readDouble();
-        io.readln();
-
-        return new BaseProductData(id, description, providerNIF, stock, price);
-    }
-    //endregion
-
-    // ============================================================
     public static void main(String[] args) {
 
         final IODB io = new IODB();
-        List<Store> stores = new LinkedList<>();
-        DB db = new DB();
-        final DB[] dbRef = new DB[]{db}; // wrap DB so lambdas can modify it
+        final DB[] dbRef = new DB[]{new DB()}; // DB envuelta en array para referencias mutables
 
         //region RAW INTERFACES
-        interface Table<Tablero> {
-            Tablero get();
-        }
-        interface Varnish<Barniz> {
-            Barniz get();
-        }
-        interface Generic<Articulo> {
-            Articulo get();
-        }
+        interface Table<Tablero> { Tablero get(); }
+        interface Varnish<Barniz> { Barniz get(); }
+        interface Generic<Articulo> { Articulo get(); }
         //endregion
 
         //region STORE MANAGEMENT
@@ -84,43 +38,41 @@ public class Main {
             int id = io.readInt();
             io.print("Enter store name: ");
             String name = io.readln();
-            stores.add(new Store(id, name));
+            dbRef[0].addStore(new Store(id, name));
             io.println("Store added: " + id + " | " + name);
         };
 
         Runnable listStores = () -> {
-            if (stores.isEmpty()) {
-                io.println("No stores available.");
-            } else {
+            List<Store> stores = dbRef[0].getStores();
+            if (stores.isEmpty()) io.println("No stores available.");
+            else {
                 io.println("Stores:");
-                for (Store store : stores) {
-                    io.println(store.toString());
-                }
+                for (Store store : stores) io.println(store.toString());
             }
         };
 
         Runnable storeOptions = () -> {
             io.println("Enter the store ID: ");
             int id = io.readInt();
-            for (Store store : stores) {
-                if (store.getId() == id) {
-                    LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> options = new LinkedHashMap<>();
-                    options.put(1, new ExtendedMenu.OpcionMenu("Show store info",
-                            () -> io.println(store.toString())));
-                    options.put(2, new ExtendedMenu.OpcionMenu("Add product to this store", () -> {
-                        int index = 0;
-                        for (Producto producto : dbRef[0].getProductos()) {
-                            io.println(index + ": " + producto);
-                            index++;
-                        }
-                        io.print("Select product index: ");
-                        int productIndex = io.readInt();
-                        dbRef[0].addProductToStoreEntry(dbRef[0].getProductos().get(productIndex).getId(), id);
-                        io.println("Product added to store.");
-                    }));
-                    ExtendedMenu.mostrarMenu("Store Management", options);
-                }
-            }
+            Store targetStore = dbRef[0].getStores().stream().filter(s -> s.getId() == id).findFirst().orElse(null);
+
+            if (targetStore != null) {
+                LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> options = new LinkedHashMap<>();
+                options.put(1, new ExtendedMenu.OpcionMenu("Show store info",
+                        () -> io.println(targetStore.toString())));
+                options.put(2, new ExtendedMenu.OpcionMenu("Add product to this store", () -> {
+                    int index = 0;
+                    for (Producto producto : dbRef[0].getProductos()) {
+                        io.println(index + ": " + producto);
+                        index++;
+                    }
+                    io.print("Select product index: ");
+                    int productIndex = io.readInt();
+                    dbRef[0].addProductToStoreEntry(dbRef[0].getProductos().get(productIndex).getId(), id);
+                    io.println("Product added to store.");
+                }));
+                ExtendedMenu.mostrarMenu("Store Management", options);
+            } else io.println("Store ID not found.");
         };
 
         Runnable storeManager = () -> {
@@ -134,7 +86,7 @@ public class Main {
 
         //region PRODUCT CREATION
         Table<Tablero> createTablero = () -> {
-            var data = Main.askBaseProductData(io, dbRef[0]);
+            var data = askBaseProductData(io, dbRef[0]);
             io.println("Enter product height: ");
             double height = io.readDouble();
             io.readln();
@@ -154,7 +106,7 @@ public class Main {
         };
 
         Varnish<Barniz> createVarnish = () -> {
-            var data = Main.askBaseProductData(io, dbRef[0]);
+            var data = askBaseProductData(io, dbRef[0]);
             io.println("Enter product volume (ml): ");
             int ml = io.readInt();
             io.println("Select varnish color:");
@@ -171,7 +123,7 @@ public class Main {
         };
 
         Generic<Articulo> createGeneric = () -> {
-            var data = Main.askBaseProductData(io, dbRef[0]);
+            var data = askBaseProductData(io, dbRef[0]);
             io.println("Select article type:");
             int j = 0;
             for (TipoArticulo type : TipoArticulo.values()) {
@@ -188,58 +140,53 @@ public class Main {
 
         //region PRODUCT MANAGEMENT
         Runnable listAllProducts = () -> {
-            if (dbRef[0].getProductos().isEmpty()) {
-                io.println("No products available.");
-            } else {
+            List<Producto> productos = dbRef[0].getProductos();
+            if (productos.isEmpty()) io.println("No products available.");
+            else {
                 io.println("Products:");
-                for (Producto p : dbRef[0].getProductos()) io.println(p.toString());
+                for (Producto p : productos) io.println(p.toString());
             }
         };
 
         Runnable searchByProvider = () -> {
-            if (dbRef[0].getProviders().isEmpty()) {
-                io.println("No providers available.");
-                return;
-            }
+            List<Provider> providers = dbRef[0].getProviders();
+            if (providers.isEmpty()) { io.println("No providers available."); return; }
+
             io.println("Select provider:");
             int i = 0;
-            for (Provider p : dbRef[0].getProviders()) {
-                io.println(i + ": " + p);
-                i++;
-            }
+            for (Provider p : providers) io.println(i++ + ": " + p);
             io.print("Option: ");
-            String providerNIF = dbRef[0].getProviders().get(io.readInt()).getNif();
+            String providerNIF = providers.get(io.readInt()).getNif();
+
             io.println("Products from selected provider:");
-            for (Producto p : dbRef[0].getProductos()) {
+            for (Producto p : dbRef[0].getProductos())
                 if (p.getProvider().equals(providerNIF)) io.println(p.toString());
-            }
         };
 
         Runnable searchByStore = () -> {
-            if (dbRef[0].getStores().isEmpty()) {
-                io.println("No stores available.");
-                return;
-            }
+            List<Store> stores = dbRef[0].getStores();
+            if (stores.isEmpty()) { io.println("No stores available."); return; }
+
             io.println("Select store:");
             int i = 0;
-            for (Store store : dbRef[0].getStores()) {
-                io.println(i + ": " + store);
-                i++;
-            }
+            for (Store s : stores) io.println(i++ + ": " + s);
             io.print("Option: ");
-            LinkedList<Producto> productsByStore = dbRef[0].getProductsByStore(
-                    dbRef[0].getStores().get(io.readInt()).getId());
+            int storeId = stores.get(io.readInt()).getId();
+
+            List<Producto> productsByStore = dbRef[0].getProductsByStore(storeId);
             io.println("Products in selected store:");
             for (Producto p : productsByStore) io.println(p.toString());
         };
 
         Runnable modifyProduct = () -> {
+            List<Producto> productos = dbRef[0].getProductos();
             io.println("Select product to modify:");
             int i = 0;
-            for (Producto p : dbRef[0].getProductos()) io.println(i++ + ": " + p);
+            for (Producto p : productos) io.println(i++ + ": " + p);
             io.print("Option: ");
             int selection = io.readInt();
-            Producto producto = dbRef[0].getProductos().get(selection);
+            Producto producto = productos.get(selection);
+
             switch (producto.getType()) {
                 case "Tablero" -> dbRef[0].modifyProduct(selection, createTablero.get());
                 case "Barniz" -> dbRef[0].modifyProduct(selection, createVarnish.get());
@@ -258,12 +205,12 @@ public class Main {
         };
 
         Runnable deleteProduct = () -> {
+            List<Producto> productos = dbRef[0].getProductos();
             io.println("Select product to delete:");
             int i = 0;
-            for (Producto p : dbRef[0].getProductos()) io.println(i++ + ": " + p);
+            for (Producto p : productos) io.println(i++ + ": " + p);
             io.print("Option: ");
-            int selection = io.readInt();
-            dbRef[0].deleteProduct(selection);
+            dbRef[0].deleteProduct(io.readInt());
             io.println("Product deleted successfully.");
         };
 
@@ -290,11 +237,13 @@ public class Main {
         };
 
         Runnable modifyProvider = () -> {
+            List<Provider> providers = dbRef[0].getProviders();
             io.println("Select provider to modify:");
             int i = 0;
-            for (Provider p : dbRef[0].getProviders()) io.println(i++ + ": " + p);
+            for (Provider p : providers) io.println(i++ + ": " + p);
             io.print("Option: ");
             int selection = io.readInt();
+
             io.println("Enter new provider NIF: ");
             String nif = io.readln();
             io.println("Enter new provider name: ");
@@ -304,12 +253,12 @@ public class Main {
         };
 
         Runnable deleteProvider = () -> {
+            List<Provider> providers = dbRef[0].getProviders();
             io.println("Select provider to delete:");
             int i = 0;
-            for (Provider p : dbRef[0].getProviders()) io.println(i++ + ": " + p);
+            for (Provider p : providers) io.println(i++ + ": " + p);
             io.print("Option: ");
-            int selection = io.readInt();
-            dbRef[0].deleteProvider(selection);
+            dbRef[0].deleteProvider(io.readInt());
             io.println("Provider deleted successfully.");
         };
 
@@ -328,27 +277,44 @@ public class Main {
 
         //region MAIN MENU
         AtomicBoolean exitApp = new AtomicBoolean(false);
+
         while (!exitApp.get()) {
+
+            new Title();
+            io.println("v 1.3.021212025");
             LinkedHashMap<Integer, ExtendedMenu.OpcionMenu> mainOptions = new LinkedHashMap<>();
             mainOptions.put(1, new ExtendedMenu.OpcionMenu("Store management", storeManager));
             mainOptions.put(2, new ExtendedMenu.OpcionMenu("Provider management", providerManager));
             mainOptions.put(3, new ExtendedMenu.OpcionMenu("Product management", productManager));
-            mainOptions.put(4, new ExtendedMenu.OpcionMenu("Save database to file", () -> {
+            mainOptions.put(4, new ExtendedMenu.OpcionMenu("DB Snapshot", () -> io.println(dbRef[0].toString())));
+
+
+            mainOptions.put(5, new ExtendedMenu.OpcionMenu("Save database to file", () -> {
                 io.print("Enter filename: ");
                 String filename = io.readln();
                 io.saveDBToFile(dbRef[0], filename);
+                io.println("Database saved to file: " + filename);
             }));
-            mainOptions.put(5, new ExtendedMenu.OpcionMenu("Load database from file", () -> {
+
+            mainOptions.put(6, new ExtendedMenu.OpcionMenu("Load database from file", () -> {
                 io.print("Enter filename: ");
-                dbRef[0] = io.loadDBFromFile(io.readln());
+                String filename = io.readln();
+                DB loadedDB = io.loadDBFromFile(filename);
+                if (loadedDB != null) {
+                    dbRef[0] = loadedDB; // Actualizamos la referencia mutable
+                    io.println("Database loaded successfully from file: " + filename);
+                } else {
+                    io.println("Failed to load database from file: " + filename);
+                }
             }));
-            mainOptions.put(6, new ExtendedMenu.OpcionMenu("Exit application", () -> {
+
+            mainOptions.put(0, new ExtendedMenu.OpcionMenu("Exit application", () -> {
                 System.out.println("Exiting application. Goodbye!");
                 exitApp.set(true);
             }));
+
             ExtendedMenu.mostrarMenu("Main Menu", mainOptions, false);
         }
         //endregion
     }
 }
-

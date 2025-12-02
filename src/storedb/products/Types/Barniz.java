@@ -3,7 +3,9 @@ import storedb.products.Producto;
 import storedb.products.Types.Subclasses.ColorBarniz;
 import storedb.providers.Provider;
 
-public class Barniz extends Producto {
+import java.io.Serializable;
+
+public class Barniz extends Producto implements Serializable {
 
     private int mililitros;
     private ColorBarniz colorBarniz;

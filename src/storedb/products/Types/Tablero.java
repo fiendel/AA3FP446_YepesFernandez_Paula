@@ -4,8 +4,9 @@ import storedb.products.Types.Subclasses.TipoTablero;
 import storedb.providers.Provider;
 
 import javax.management.Descriptor;
+import java.io.Serializable;
 
-public class Tablero extends Producto {
+public class Tablero extends Producto implements Serializable {
     private double height;
     private  double width;
     private String type;

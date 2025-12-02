@@ -3,7 +3,9 @@ package storedb.products.Types;
 import storedb.products.Producto;
 import storedb.products.Types.Subclasses.TipoArticulo;
 
-public class Articulo extends Producto {
+import java.io.Serializable;
+
+public class Articulo extends Producto implements Serializable {
 
     private TipoArticulo tipoArticulo;
 

@@ -1,9 +1,10 @@
 package com.qol;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
-public class IO {
+public class IO implements Serializable {
 
     private final Scanner scanner = new Scanner(System.in);
 
