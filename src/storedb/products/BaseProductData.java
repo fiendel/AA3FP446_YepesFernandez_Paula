@@ -11,7 +11,7 @@ public record BaseProductData(
         int stock,
         double price
 ) {
-    private static BaseProductData askBaseProductData(IO io, DB db) {
+    public static BaseProductData askBaseProductData(IO io, DB db) {
         io.println("Enter product ID: ");
         int id = io.readInt();
 
